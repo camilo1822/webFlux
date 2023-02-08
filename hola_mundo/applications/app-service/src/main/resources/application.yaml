@@ -20,3 +20,22 @@ management:
     health:
       probes:
         enabled: true
+aws:
+  dynamodb:
+    endpoint: "http://localhost:8000"
+    threads: "10"
+commons:
+  jms:
+    output-concurrency: 10
+    output-queue: "DEV.QUEUE.2"
+    input-queue: "DEV.QUEUE.1"
+    producer-ttl: 60000
+    reactive: true
+ibm:
+  mq:
+    channel: "DEV.APP.SVRCONN"
+    user: "app"
+    conn-name: "localhost(1414)"
+    listener_timeout: 6000
+    sender_timeout: 6000
+    queue-manager: QM1
