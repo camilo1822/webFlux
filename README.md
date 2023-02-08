@@ -17,6 +17,7 @@ User: admin
 Password: passw0rd
 
 -Publicamos cola desde microservicio, primero usamos el scafold para crear el adaptador
+
 gradle generateDrivenAdapter --type=mq
 
 –Se configura propiedades de cola en el application.yml
@@ -128,6 +129,3 @@ public class MQConfig {
 ## Notas
 compilar: gradle clean build
 desplegar: gradle clean booRun
-
-Para el error cannot resolve method 'run(class string )' SpringApplication.run
-Cambiar el SDK, click derecho sobre el proyecto y escoger "Open Module Settings" -> Project y escoger SDK deseado (jdk 11)
