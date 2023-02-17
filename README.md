@@ -126,6 +126,29 @@ public class MQConfig {
 
 ```
 
+
+## Generando el escuchador
+Para el listener vamos a crear un nuevo micro “ListenerMq”
+-Creamos un entryPoint de tipo mq
+```html
+gradle generateEntryPoint --type=mq
+```
+
+En el entryPoint generado debemos agregar en la anotación, la cola que estamos escuchando
+
+```html
+@MQListener(value = "DEV.QUEUE.1")
+public Mono<Void> process(Message message) throws JMSException {
+   System.out.println("Escuchando");
+   timer.record(System.currentTimeMillis() - message.getJMSTimestamp(), TimeUnit.MILLISECONDS);
+   String text = ((TextMessage) message).getText();
+   System.out.println("text "+text);
+   // return useCase.sample(text);
+   return Mono.empty();
+}
+
+```
+
 ## Notas
 compilar: gradle clean build
 desplegar: gradle clean booRun
