@@ -10,7 +10,7 @@ public class HolaMundoRestUseCase {
 
     private final ModelHolaRepository modelGateway;
     public Mono<String> execute(String request) {
-         return modelGateway.send("soy un  mq");
-        // Mono.just("hola mundo");
+         return modelGateway.send("soy un  mq")
+                 .flatMap(modelGateway::listen);
     }
 }

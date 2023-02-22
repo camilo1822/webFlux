@@ -3,16 +3,16 @@ package co.com.nequi.mq.sender;
 import co.com.bancolombia.commons.jms.api.MQMessageSelectorListener;
 import co.com.bancolombia.commons.jms.api.MQMessageSender;
 import co.com.bancolombia.commons.jms.api.MQQueuesContainer;
-import co.com.bancolombia.commons.jms.mq.EnableMQMessageSender;
 import co.com.nequi.model.modelhola.gateways.ModelHolaRepository;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import javax.jms.Destination;
+import javax.jms.JMSException;
 import javax.jms.Message;
+import javax.jms.TextMessage;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -35,17 +35,20 @@ public class SampleMQMessageSender  implements ModelHolaRepository {
                 .metrics();
     }
 
-    // Enable it to retrieve a specific message by correlationId
-//    public Mono<String> getResult(String correlationId) {
-//        return listener.getMessage(correlationId)
-//                .name("mq_receive_message")
-//                .tag("operation", "my-operation") // TODO: Change operation name
-//                .metrics()
-//                .map(this::extractResponse);
-//    }
-//
-//    private String extractResponse(Message message) {
-//        TextMessage textMessage = (TextMessage) message;
-//        return textMessage.getText();
-//    }
+    @Override
+    public Mono<String> listen(String message) {
+        return listener
+                .getMessage(message,timeout,inputDestination)
+                .map(this::extractResponse).doOnSuccess(i -> System.out.println("success"))
+                .doOnError(i -> System.out.println("error "+i.getMessage()));
+    }
+
+    private String extractResponse(Message message) {
+        TextMessage textMessage = (TextMessage) message;
+        try {
+            return textMessage.getText();
+        } catch (JMSException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

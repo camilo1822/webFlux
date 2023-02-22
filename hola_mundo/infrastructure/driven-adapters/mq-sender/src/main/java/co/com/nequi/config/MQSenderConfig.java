@@ -3,7 +3,6 @@ package co.com.nequi.config;
 import co.com.bancolombia.commons.jms.api.MQMessageSelectorListener;
 import co.com.bancolombia.commons.jms.api.MQMessageSender;
 import co.com.bancolombia.commons.jms.api.MQQueueCustomizer;
-import co.com.bancolombia.commons.jms.api.MQQueuesContainer;
 import co.com.bancolombia.commons.jms.mq.EnableMQMessageSender;
 import co.com.bancolombia.commons.jms.mq.EnableMQSelectorMessageListener;
 import co.com.nequi.model.modelhola.gateways.ModelHolaRepository;
@@ -26,11 +25,13 @@ public class MQSenderConfig {
     public ModelHolaRepository modelGateway(@Value("${ibm.mq.listener_timeout}") Long listenerTimeout,
                                             MQMessageSender sender,
                                             @Value("${commons.jms.output-queue}") String outputQueue,
+                                            @Value("${commons.jms.input-queue}") String inputQueue,
                                             MQQueueCustomizer customizer,
                                             MQMessageSelectorListener listener) throws JMSException {
 
         Destination destinationQueue = createDestinationQueue(outputQueue, customizer);
-        return new SampleMQMessageSender(listenerTimeout,destinationQueue,sender,listener,destinationQueue);
+        Destination inputDestinationQueue = createDestinationQueue(inputQueue, customizer);
+        return new SampleMQMessageSender(listenerTimeout,inputDestinationQueue,sender,listener,destinationQueue);
     }
 
     private Destination createDestinationQueue(String outputQueue, MQQueueCustomizer customizer) throws JMSException {
