@@ -134,20 +134,98 @@ Para el listener vamos a crear un nuevo micro “ListenerMq”
 gradle generateEntryPoint --type=mq
 ```
 
-En el entryPoint generado debemos agregar en la anotación, la cola que estamos escuchando
+En el entryPoint generado debemos agregar en la anotación, la cola que estamos escuchando, a parte debemos obtener el messageId del mensaje de entrada para propagarlo al mensaje de salida
 
 ```html
-@MQListener(value = "DEV.QUEUE.1")
-public Mono<Void> process(Message message) throws JMSException {
-   System.out.println("Escuchando");
-   timer.record(System.currentTimeMillis() - message.getJMSTimestamp(), TimeUnit.MILLISECONDS);
-   String text = ((TextMessage) message).getText();
-   System.out.println("text "+text);
-   // return useCase.sample(text);
-   return Mono.empty();
+package co.com.nequi.mq.listener;
+
+import co.com.bancolombia.commons.jms.mq.MQListener;
+import co.com.nequi.usecase.listener.ListenerUseCase;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.TextMessage;
+import java.util.concurrent.TimeUnit;
+
+@Component
+@RequiredArgsConstructor
+public class SampleMQMessageListener {
+    private final Timer timer = Metrics.timer("mq_receive_message", "operation", "my-operation"); // TODO: Change operation name
+    private final ListenerUseCase listenerUseCase;
+
+    // For fixed queues
+    @MQListener(value = "DEV.QUEUE.1")
+    public Mono<String> process(Message message) throws JMSException {
+        // String corId = message.getJMSCorrelationID();
+        String msgId = message.getJMSMessageID();
+        timer.record(System.currentTimeMillis() - message.getJMSTimestamp(), TimeUnit.MILLISECONDS);
+        String text = ((TextMessage) message).getText();
+        return listenerUseCase.execute(msgId);
+    }
 }
 
+
 ```
+
+-Creamos el sender con el messageId obtenido anteriormente
+```html
+@RequiredArgsConstructor
+@Slf4j
+public class Sender implements ModelListenerRepository {
+
+  private final MQMessageSender sender;
+
+    @Override
+    public Mono<String> send(String corId) {
+            return sender.send(context ->
+                    {
+                        Message textMessage;
+                        textMessage = context.createTextMessage("Respuesta exitosa");
+                        textMessage.setJMSCorrelationID(corId);
+                        return textMessage;
+                    }).doOnError(i -> System.out.println("error" +i.getMessage()))
+                    .doOnSuccess(i -> System.out.println("success"))
+                    .name("mq_send_message")
+                    .tag("operation", "my-operation")
+                    .metrics();
+    }
+
+}
+```
+
+-Ahora en el caso de uso del micro 1 agregamos la lectura de la respuesta
+```html
+ public Mono<String> execute(String request) {
+         return modelGateway.send("soy un  mq")
+                 .flatMap(modelGateway::listen);
+    }
+```
+
+-por ultimo creamos el listener
+```html
+ @Override
+    public Mono<String> listen(String message) {
+        return listener
+                .getMessage(message,timeout,inputDestination)
+                .map(this::extractResponse).doOnSuccess(i -> System.out.println("success"))
+                .doOnError(i -> System.out.println("error "+i.getMessage()));
+    }
+
+    private String extractResponse(Message message) {
+        TextMessage textMessage = (TextMessage) message;
+        try {
+            return textMessage.getText();
+        } catch (JMSException e) {
+            throw new RuntimeException(e);
+        }
+    }
+ ```
 
 ## Notas
 compilar: gradle clean build
