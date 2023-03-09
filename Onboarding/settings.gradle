@@ -1,0 +1,22 @@
+pluginManagement {
+    repositories {
+        //mavenLocal()
+        //maven { url '...' }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'Onboarding'
+
+include ':app-service'
+include ':model'
+include ':usecase'
+project(':app-service').projectDir = file('./applications/app-service')
+project(':model').projectDir = file('./domain/model')
+project(':usecase').projectDir = file('./domain/usecase')
+include ':reactive-web'
+project(':reactive-web').projectDir = file('./infrastructure/entry-points/reactive-web')
+include ':memdatabase'
+project(':memdatabase').projectDir = file('./infrastructure/driven-adapters/memdatabase')
+include ':finacle-message'
+project(':finacle-message').projectDir = file('./infrastructure/driven-adapters/finacle-message')
